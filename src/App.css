@@ -1,0 +1,25 @@
+/* General Responsive Styles */
+@media (max-width: 1024px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .navbar { width: 100% !important; left: 0 !important; }
+}
+
+@media (max-width: 768px) {
+  :where(.grid-cols-2, .grid-cols-3) { grid-template-columns: 1fr !important; }
+  .p-8 { padding: 4px !important; }
+  .w-96 { width: 100% !important; }
+}
+
+@media (max-width: 480px) {
+  .text-3xl { font-size: 1.5rem !important; }
+  .text-2xl { font-size: 1.25rem !important; }
+  .text-lg { font-size: 1rem !important; }
+  .p-6 { padding: 2px !important; }
+}
+
+/* Tables & Forms */
+@media (max-width: 768px) {
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+  input, textarea { width: 100% !important; }
+}
