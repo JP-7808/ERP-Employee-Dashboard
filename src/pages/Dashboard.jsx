@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
+import axios from "axios";
 import {
   FaBars,
   FaTimes,
@@ -8,10 +9,6 @@ import {
   FaUser,
   FaEnvelope,
   FaBriefcase,
-  FaTachometerAlt,
-  FaBullseye,
-  FaTrophy,
-  FaChartBar,
 } from "react-icons/fa";
 
 const Dashboard = () => {
@@ -19,49 +16,70 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [employeeId, setEmployeeId] = useState(null);
+  const [performance, setPerformance] = useState({
+    monthlyTarget: 0,
+    quarterlyTarget: 0,
+    yearlyTarget: 0,
+    totalSales: 0,
+  });
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setLoggedInUser(JSON.parse(storedUser));
+    const token = localStorage.getItem("token");
+
+    if (storedUser && token) {
+      const parsedUser = JSON.parse(storedUser);
+      console.log("Logged-in user:", parsedUser);
+      setLoggedInUser(parsedUser);
+      fetchEmployeeId(parsedUser.id, token);
     } else {
       navigate("/"); // Redirect to login if not authenticated
     }
   }, [navigate]);
 
+  const fetchEmployeeId = async (userId, token) => {
+    try {
+      console.log("Fetching employee ID for User ID:", userId);
+      const response = await axios.get(
+        `https://erp-r0hx.onrender.com/api/employee/user/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const empId = response.data.employeeId;
+      console.log("Fetched Employee ID:", empId);
+      setEmployeeId(empId);
+
+      if (empId) {
+        fetchEmployeePerformance(empId, token);
+      }
+    } catch (error) {
+      console.error("Error fetching employee ID:", error);
+    }
+  };
+
+  const fetchEmployeePerformance = async (empId, token) => {
+    try {
+      console.log("Fetching performance for Employee ID:", empId);
+      const response = await axios.get(
+        `https://erp-r0hx.onrender.com/api/employee/${empId}/performance`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("API Response:", response.data);
+      setPerformance(response.data);
+    } catch (error) {
+      console.error("Error fetching performance data:", error);
+    }
+  };
+
   const handleLogout = () => {
     logout();
-    navigate("/"); // Redirect to login after logout
-  };
-
-  // Dummy Data
-  const employee = {
-    id: "EMP001",
-    name: "Thirteen",
-    email: "thirteen@infratech.com",
-    role: "Employee",
-  };
-
-  const performanceMetrics = {
-    sales: "$12,000",
-    leads: 45,
-    conversions: 30,
-  };
-
-  const pendingTargets = [
-    { type: "Monthly", value: "$10,000", deadline: "2024-03-31" },
-    { type: "Quarterly", value: "$30,000", deadline: "2024-06-30" },
-    { type: "Yearly", value: "$120,000", deadline: "2024-12-31" },
-  ];
-
-  const salesContests = [
-    { name: "Spring Sales Blitz", prize: "$5,000", endDate: "2024-06-15" },
-    { name: "Summer Challenge", prize: "$3,000", endDate: "2024-08-20" },
-  ];
-
-  const salesAchievements = {
-    totalSales: "$120,000",
-    incentives: "$5,000",
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/");
   };
 
   return (
@@ -85,13 +103,11 @@ const Dashboard = () => {
         {/* Logged-in User Details */}
         {loggedInUser && (
           <div className="bg-blue-900 p-4 rounded-lg mb-6">
-            <p className="text-lg  font-semibold">{loggedInUser.name}</p>
-            <p className="text-sm ">{loggedInUser.email}</p>
-            <p className="text-sm  capitalize">{loggedInUser.role}</p>
+            <p className="text-lg font-semibold">{loggedInUser.name}</p>
+            <p className="text-sm">{loggedInUser.email}</p>
+            <p className="text-sm capitalize">{loggedInUser.role}</p>
           </div>
         )}
-
-        
 
         {/* Logout Button */}
         <button
@@ -123,70 +139,62 @@ const Dashboard = () => {
             <h2 className="text-2xl font-bold mb-4 text-gray-800">
               Employee Details
             </h2>
-           {loggedInUser && ( <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <FaUser className="text-blue-700" />
-                <p className="text-gray-700">{loggedInUser.name}</p>
+            {loggedInUser && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <FaUser className="text-blue-700" />
+                  <p className="text-gray-700">{loggedInUser.name}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FaEnvelope className="text-blue-700" />
+                  <p className="text-gray-700">{loggedInUser.email}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FaBriefcase className="text-blue-700" />
+                  <p className="text-gray-700">{loggedInUser.role}</p>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <FaEnvelope className="text-blue-700" />
-                <p className="text-gray-700">{loggedInUser.email}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <FaBriefcase className="text-blue-700" />
-                <p className="text-gray-700">{loggedInUser.role}</p>
-              </div>
-            </div> )}
+            )}
           </div>
 
-          {/* Performance Metrics */}
+          {/* Pending Targets Section */}
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Performance Overview
+            Pending Targets
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="bg-green-100 p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-semibold text-green-800">
-                Total Sales
+                Monthly Targets
               </h3>
               <p className="text-2xl font-bold text-green-900">
-                {performanceMetrics.sales}
+                ${performance.monthlyTarget}
               </p>
             </div>
             <div className="bg-blue-100 p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-semibold text-blue-800">
-                Leads Generated
+                Quarterly Targets
               </h3>
               <p className="text-2xl font-bold text-blue-900">
-                {performanceMetrics.leads}
+                ${performance.quarterlyTarget}
               </p>
             </div>
             <div className="bg-yellow-100 p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-semibold text-yellow-800">
-                Conversions
+                Yearly Targets
               </h3>
               <p className="text-2xl font-bold text-yellow-900">
-                {performanceMetrics.conversions}
+                ${performance.yearlyTarget}
               </p>
             </div>
           </div>
 
-          {/* Sales Contests */}
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Running Sales Contests
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {salesContests.map((contest, index) => (
-              <div
-                key={index}
-                className="p-6 rounded-lg bg-purple-100 hover:bg-purple-200 transition-colors"
-              >
-                <h3 className="text-lg font-semibold text-purple-800">
-                  {contest.name}
-                </h3>
-                <p className="text-purple-700">Prize: {contest.prize}</p>
-                <p className="text-purple-700">End Date: {contest.endDate}</p>
-              </div>
-            ))}
+          {/* Total Sales Section */}
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Total Sales</h2>
+          <div className="bg-purple-100 p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-purple-800">Sales</h3>
+            <p className="text-2xl font-bold text-purple-900">
+              ${performance.totalSales}
+            </p>
           </div>
         </main>
       </div>
